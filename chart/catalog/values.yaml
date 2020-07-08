@@ -1,0 +1,86 @@
+replicaCount: 1
+
+image:
+  repository: ibmcase/bluecompute-catalog
+  tag: 0.6.0
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  externalPort: 8081
+  internalPort: 8081
+  managementPort: 8091
+  nodePort: 32381
+
+ingress:
+  enabled: false
+  hostname: #catalog.bluecompute.com
+  path: /micro/items
+  annotations:
+    ingress.bluemix.net/redirect-to-https: "True"
+  enableTLS: false
+  TLS:
+  - secretName: catalog.bluecompute.com
+    hosts:
+      - catalog.bluecompute.com
+
+# Alpine with cURL
+curl:
+  image: alexeiled/curl
+  imageTag: latest
+  imagePullPolicy: IfNotPresent
+
+elasticsearch:
+  protocol: http
+  host: catalog-elasticsearch-client
+  port: 9200
+  username:
+  password:
+  healthcheck: "_cat/health"
+  cacertificatebase64:
+
+# Inventory Microservice URL, which is needed to pull data into Elasticsearch
+inventory:
+  url:
+
+resources:
+  limits:
+    memory: 384Mi
+  requests:
+    memory: 64Mi
+
+labels:
+  app: catalog
+  version: v1
+  tier: backend
+
+securityContext:
+  runAsUser: 2000
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+
+istio:
+  enabled: false
+  # ISTIO_MUTUAL, SIMPLE, DISABLE
+  mTLS: ISTIO_MUTUAL
+  # LEAST_CONN, ROUND_ROBIN
+  loadBalancer: LEAST_CONN
+  gateway:
+    enabled: false
+    name:
+    hosts:
+      - "catalog.bluecompute.com"
+    TLS:
+      enabled: false
+      # SIMPLE, MUTUAL
+      mode: SIMPLE
+      httpsRedirect: false
+      serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
+      privateKey: /etc/istio/ingressgateway-certs/tls.key
+      caCertificates: /etc/istio/ingressgateway-ca-certs/ca-chain.cert.pem
+
+global:
+  istio:
+    enabled:
+    gateway:
+      name:
